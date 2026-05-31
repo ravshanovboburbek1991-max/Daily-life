@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg2: #111113;
+    --bg3: #18181c;
+    --bg4: #1f1f25;
+    --border: #2a2a32;
+    --border2: #333340;
+    --text: #e8e8ee;
+    --text2: #9898a8;
+    --text3: #5a5a6a;
+    --gold: #c9a84c;
+    --gold2: #e8c87a;
+    --gold-dim: rgba(201,168,76,0.12);
+    --green: #4caf82;
+    --green-dim: rgba(76,175,130,0.12);
+    --red: #e05a5a;
+    --red-dim: rgba(224,90,90,0.12);
+    --blue: #5a8ae0;
+    --blue-dim: rgba(90,138,224,0.12);
+    --faith: #8b7cf6;
+    --family: #e07a5f;
+    --health: #4caf82;
+    --work: #5a8ae0;
+    --growth: #f4c542;
+    --char: #c9a84c;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--gold2);
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+
+  .brand-sub {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .nav {
+    padding: 16px 0;
+    flex: 1;
+  }
+
+  .nav-section {
+    padding: 0 16px;
+    margin-bottom: 4px;
+  }
+
+  .nav-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    padding: 8px 8px 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--gold-dim); color: var(--gold2); }
+  .nav-item.active .nav-dot { background: var(--gold); }
+
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border2);
+    flex-shrink: 0;
+  }
+
+  .sidebar-date {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    padding: 32px 36px;
+    max-width: 1400px;
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── HEADER ── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+
+  .page-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── GRID ── */
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-1 { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px; }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .card-sm { padding: 16px; }
+
+  .card-title {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  /* ── STAT CARD ── */
+  .stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px;
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+
+  .stat-change {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .stable { color: var(--text3); }
+
+  /* ── LQI RING ── */
+  .lqi-wrap {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .lqi-ring-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+  }
+
+  .lqi-ring-svg {
+    width: 120px;
+    height: 120px;
+    transform: rotate(-90deg);
+  }
+
+  .lqi-ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+  }
+
+  .lqi-ring-fill {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease;
+  }
+
+  .lqi-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .lqi-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--gold2);
+    line-height: 1;
+  }
+
+  .lqi-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── CHECKLIST ── */
+  .checklist-section { margin-bottom: 20px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .section-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-name {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .section-score {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.1s;
+    border: 1px solid transparent;
+    margin-bottom: 4px;
+    background: var(--bg3);
+    user-select: none;
+  }
+
+  .check-item:hover { border-color: var(--border2); }
+  .check-item.checked { background: var(--bg4); }
+
+  .checkbox {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .check-item.checked .checkbox {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .checkmark {
+    display: none;
+    color: var(--bg);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .check-item.checked .checkmark { display: block; }
+
+  .check-text {
+    font-size: 13px;
+    color: var(--text2);
+    transition: color 0.15s;
+  }
+
+  .check-item.checked .check-text {
+    color: var(--text);
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--bg4);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── SCORE RING (mini) ── */
+  .mini-ring {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mini-ring:last-child { border-bottom: none; }
+
+  .mini-ring-label {
+    width: 90px;
+    font-size: 12px;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  .mini-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--bg4);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .mini-pct {
+    width: 36px;
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+
+  /* ── STREAK ── */
+  .streak-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  .streak-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .streak-name {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .streak-current {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--gold2);
+    line-height: 1;
+  }
+
+  .streak-unit {
+    font-size: 10px;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  .streak-best {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* ── CHART ── */
+  .chart-wrap {
+    position: relative;
+    height: 200px;
+  }
+
+  .chart-wrap-lg {
+    position: relative;
+    height: 260px;
+  }
+
+  .time-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+
+  .time-tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text3);
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+  }
+
+  .time-tab:hover { color: var(--text2); border-color: var(--border2); }
+  .time-tab.active { background: var(--gold-dim); color: var(--gold2); border-color: var(--gold); }
+
+  /* ── REFLECTION ── */
+  .reflection-field {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    resize: none;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.7;
+  }
+
+  .reflection-field:focus { border-color: var(--border2); }
+  .reflection-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+
+  /* ── MONTHLY INSIGHTS ── */
+  .insight-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+
+  .insight-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+
+  .tag-best { background: var(--green-dim); color: var(--green); }
+  .tag-weak { background: var(--red-dim); color: var(--red); }
+  .tag-improve { background: var(--gold-dim); color: var(--gold2); }
+  .tag-neglect { background: var(--blue-dim); color: var(--blue); }
+
+  .insight-text {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  /* ── BTN ── */
+  .btn {
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn:hover { background: var(--bg4); border-color: var(--text3); }
+
+  .btn-primary {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: var(--gold2);
+  }
+
+  .btn-primary:hover { background: rgba(201,168,76,0.2); }
+
+  /* ── TODAY SCORE HEADER ── */
+  .today-scores {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .today-score-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text3);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* ── SMALL TEXT ── */
+  .text-xs { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .text-sm { font-size: 12px; color: var(--text2); }
+  .mt-4 { margin-top: 4px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mb-8 { margin-bottom: 8px; }
+  .flex { display: flex; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-8 { gap: 8px; }
+
+  .save-indicator {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    opacity: 0;
+    transition: opacity 0.3s;
+    letter-spacing: 0.06em;
+  }
+
+  .save-indicator.show { opacity: 1; }
+
+  /* ── WEEKLY HEATMAP ── */
+  .heatmap-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+    align-items: center;
+  }
+
+  .heatmap-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .heatmap-cell {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    background: var(--bg4);
+    flex-shrink: 0;
+    cursor: default;
+    transition: transform 0.1s;
+  }
+
+  .heatmap-cell:hover { transform: scale(1.2); }
+
+  .day-labels {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+    padding-left: 32px;
+  }
+
+  .day-label {
+    width: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    color: var(--text3);
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 1100px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .streak-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 800px) {
+    .sidebar { width: 56px; min-width: 56px; }
+    .sidebar .brand-name, .sidebar .brand-sub, .nav-item span, .nav-label, .sidebar-date { display: none; }
+    .nav-item { justify-content: center; padding: 10px; }
+    .main { margin-left: 56px; padding: 20px 18px; }
+    .grid-4, .grid-3 { grid-template-columns: repeat(2,1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    .streak-grid { grid-template-columns: repeat(2,1fr); }
+    .col-span-2, .col-span-3 { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">Life<br>Dashboard</div>
+    <div class="brand-sub">Personal OS</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Daily</div>
+      <button class="nav-item active" onclick="showPage('today')">
+        <span class="nav-dot"></span>
+        <span>Today</span>
+      </button>
+      <button class="nav-item" onclick="showPage('reflection')">
+        <span class="nav-dot"></span>
+        <span>Reflection</span>
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Analysis</div>
+      <button class="nav-item" onclick="showPage('overview')">
+        <span class="nav-dot"></span>
+        <span>Overview</span>
+      </button>
+      <button class="nav-item" onclick="showPage('trends')">
+        <span class="nav-dot"></span>
+        <span>Trends</span>
+      </button>
+      <button class="nav-item" onclick="showPage('streaks')">
+        <span class="nav-dot"></span>
+        <span>Streaks</span>
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Review</div>
+      <button class="nav-item" onclick="showPage('monthly')">
+        <span class="nav-dot"></span>
+        <span>Monthly Review</span>
+      </button>
+      <button class="nav-item" onclick="showPage('history')">
+        <span class="nav-dot"></span>
+        <span>History</span>
+      </button>
+    </div>
+  </nav>
+  <div class="sidebar-date" id="sidebarDate"></div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ══════════════════ TODAY ══════════════════ -->
+  <div id="page-today" class="page active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Today's Practice</div>
+        <div class="page-sub" id="todayDateLabel">—</div>
+      </div>
+      <div class="flex gap-8" style="align-items:center;">
+        <span class="save-indicator" id="saveIndicator">● Saved</span>
+        <div class="today-scores" id="todayScorePills"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Left: Checklist -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- FAITH -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--faith)"></div>
+            <div class="section-name" style="color:var(--faith)">Faith</div>
+            <div class="section-score" id="score-faith">0 / 4</div>
+          </div>
+          <div id="checks-faith"></div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-faith" style="background:var(--faith);width:0%"></div></div>
+        </div>
+
+        <!-- FAMILY -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--family)"></div>
+            <div class="section-name" style="color:var(--family)">Family</div>
+            <div class="section-score" id="score-family">0 / 3</div>
+          </div>
+          <div id="checks-family"></div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-family" style="background:var(--family);width:0%"></div></div>
+        </div>
+
+        <!-- HEALTH -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--health)"></div>
+            <div class="section-name" style="color:var(--health)">Health</div>
+            <div class="section-score" id="score-health">0 / 3</div>
+          </div>
+          <div id="checks-health"></div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-health" style="background:var(--health);width:0%"></div></div>
+        </div>
+
+      </div>
+
+      <!-- Right: Checklist cont. + Day Score -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- WORK -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--work)"></div>
+            <div class="section-name" style="color:var(--work)">Work & Leadership</div>
+            <div class="section-score" id="score-work">0 / 3</div>
+          </div>
+          <div id="checks-work"></div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-work" style="background:var(--work);width:0%"></div></div>
+        </div>
+
+        <!-- GROWTH -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--growth)"></div>
+            <div class="section-name" style="color:var(--growth)">Personal Growth</div>
+            <div class="section-score" id="score-growth">0 / 2</div>
+          </div>
+          <div id="checks-growth"></div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-growth" style="background:var(--growth);width:0%"></div></div>
+        </div>
+
+        <!-- CHARACTER -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--char)"></div>
+            <div class="section-name" style="color:var(--char)">Character</div>
+            <div class="section-score" id="score-char">0 / 3</div>
+          </div>
+          <div id="checks-char"></div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-char" style="background:var(--char);width:0%"></div></div>
+        </div>
+
+        <!-- DAY TOTAL -->
+        <div class="card" style="background:var(--bg3);border-color:var(--border2);">
+          <div class="card-title">Daily Score</div>
+          <div class="flex-between">
+            <div>
+              <div class="stat-value" id="dailyScoreNum" style="color:var(--gold2)">0%</div>
+              <div class="stat-label" id="dailyScoreDetail">0 of 18 completed</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="text-xs" style="margin-bottom:6px;">Weekly Avg</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--text2);" id="weeklyAvgNum">—</div>
+            </div>
+          </div>
+          <div class="progress-bar" style="height:6px;margin-top:14px;">
+            <div class="progress-fill" id="bar-daily" style="background: linear-gradient(90deg, var(--gold), var(--gold2)); width:0%"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ REFLECTION ══════════════════ -->
+  <div id="page-reflection" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">End of Day Reflection</div>
+        <div class="page-sub" id="reflectionDate">—</div>
+      </div>
+      <span class="save-indicator" id="reflSaveIndicator">● Saved</span>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Today's Reflection</div>
+        <div class="reflection-label">Biggest Win</div>
+        <textarea class="reflection-field" id="refl-win" placeholder="What went right today?" oninput="saveReflection()"></textarea>
+
+        <div class="reflection-label">Biggest Mistake</div>
+        <textarea class="reflection-field" id="refl-mistake" placeholder="What could have been better?" oninput="saveReflection()"></textarea>
+
+        <div class="reflection-label">Tomorrow's Improvement</div>
+        <textarea class="reflection-field" id="refl-tomorrow" placeholder="One thing to do differently tomorrow..." oninput="saveReflection()"></textarea>
+
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" onclick="saveReflection(true)">Save Reflection</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Previous Reflections</div>
+          <div id="recentReflections" style="font-size:13px;color:var(--text3);">No reflections saved yet.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Today's Category Breakdown</div>
+          <div id="reflBreakdown"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ OVERVIEW ══════════════════ -->
+  <div id="page-overview" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Life Quality Overview</div>
+        <div class="page-sub">Your life at a glance</div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-title">Life Quality Index</div>
+        <div class="lqi-wrap" style="flex-direction:column;align-items:flex-start;gap:10px;">
+          <div class="lqi-ring-container">
+            <svg class="lqi-ring-svg" viewBox="0 0 120 120">
+              <circle class="lqi-ring-bg" cx="60" cy="60" r="52"/>
+              <circle class="lqi-ring-fill" id="lqiRing" cx="60" cy="60" r="52"
+                stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+            </svg>
+            <div class="lqi-center">
+              <div class="lqi-num" id="lqiNum">—</div>
+              <div class="lqi-label">LQI</div>
+            </div>
+          </div>
+          <div>
+            <div class="stat-change" id="lqiChange"><span class="stable">→ Calculating...</span></div>
+            <div class="text-xs mt-4" id="lqiStatus">Based on last 30 days</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">This Month</div>
+        <div class="stat-value" id="monthAvg" style="color:var(--text)">—</div>
+        <div class="stat-label">Average Daily Score</div>
+        <div class="stat-change mt-8" id="monthChange"><span class="stable">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">This Week</div>
+        <div class="stat-value" id="weekAvg" style="color:var(--text)">—</div>
+        <div class="stat-label">Average Daily Score</div>
+        <div class="stat-change mt-8" id="weekChange"><span class="stable">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Days Tracked</div>
+        <div class="stat-value" id="daysTracked" style="color:var(--text)">0</div>
+        <div class="stat-label">Total days logged</div>
+        <div class="stat-change mt-8" id="streakDays"><span class="stable">—</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Category Breakdown — This Month</div>
+        <div id="catBreakdown"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">30-Day Life Score</div>
+        <div class="chart-wrap">
+          <canvas id="overviewChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">Activity Heatmap — Last 12 Weeks</div>
+      <div id="heatmapContainer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TRENDS ══════════════════ -->
+  <div id="page-trends" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Life Trends</div>
+        <div class="page-sub">Long-term trajectory analysis</div>
+      </div>
+    </div>
+
+    <div class="time-tabs" id="trendTabs">
+      <button class="time-tab active" data-range="7" onclick="setTrendRange(7, this)">7 Days</button>
+      <button class="time-tab" data-range="30" onclick="setTrendRange(30, this)">30 Days</button>
+      <button class="time-tab" data-range="90" onclick="setTrendRange(90, this)">90 Days</button>
+      <button class="time-tab" data-range="365" onclick="setTrendRange(365, this)">1 Year</button>
+      <button class="time-tab" data-range="9999" onclick="setTrendRange(9999, this)">All Time</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Overall Life Score</div>
+      <div class="chart-wrap-lg"><canvas id="trendOverall"></canvas></div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="section-header" style="margin-bottom:8px;">
+          <div class="section-dot" style="background:var(--faith)"></div>
+          <div class="section-name" style="color:var(--faith)">Faith</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendFaith"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-header" style="margin-bottom:8px;">
+          <div class="section-dot" style="background:var(--family)"></div>
+          <div class="section-name" style="color:var(--family)">Family</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendFamily"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-header" style="margin-bottom:8px;">
+          <div class="section-dot" style="background:var(--health)"></div>
+          <div class="section-name" style="color:var(--health)">Health</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendHealth"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-header" style="margin-bottom:8px;">
+          <div class="section-dot" style="background:var(--work)"></div>
+          <div class="section-name" style="color:var(--work)">Leadership</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendWork"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-header" style="margin-bottom:8px;">
+          <div class="section-dot" style="background:var(--growth)"></div>
+          <div class="section-name" style="color:var(--growth)">Learning</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendGrowth"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-header" style="margin-bottom:8px;">
+          <div class="section-dot" style="background:var(--char)"></div>
+          <div class="section-name" style="color:var(--char)">Character</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendChar"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ STREAKS ══════════════════ -->
+  <div id="page-streaks" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Discipline Streaks</div>
+        <div class="page-sub">Consistency is the foundation of excellence</div>
+      </div>
+    </div>
+
+    <div class="streak-grid" id="streakGrid" style="margin-bottom:20px;"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Streak Details</div>
+        <div id="streakDetails"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Overall Consistency — Last 30 Days</div>
+        <div class="chart-wrap"><canvas id="streakChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ MONTHLY REVIEW ══════════════════ -->
+  <div id="page-monthly" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Monthly Review</div>
+        <div class="page-sub" id="monthlyReviewPeriod">—</div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn" onclick="changeReviewMonth(-1)">← Previous</button>
+        <button class="btn" onclick="changeReviewMonth(1)">Next →</button>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="card" id="mCard-faith">
+        <div class="card-title">Faith</div>
+        <div class="stat-value" id="mStat-faith" style="color:var(--faith)">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+      <div class="card" id="mCard-family">
+        <div class="card-title">Family</div>
+        <div class="stat-value" id="mStat-family" style="color:var(--family)">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+      <div class="card" id="mCard-health">
+        <div class="card-title">Health</div>
+        <div class="stat-value" id="mStat-health" style="color:var(--health)">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+      <div class="card" id="mCard-work">
+        <div class="card-title">Leadership</div>
+        <div class="stat-value" id="mStat-work" style="color:var(--work)">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+      <div class="card" id="mCard-growth">
+        <div class="card-title">Learning</div>
+        <div class="stat-value" id="mStat-growth" style="color:var(--growth)">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+      <div class="card" id="mCard-char">
+        <div class="card-title">Character</div>
+        <div class="stat-value" id="mStat-char" style="color:var(--char)">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+      <div class="card col-span-2">
+        <div class="card-title">Overall Monthly Score</div>
+        <div class="stat-value" id="mStat-overall" style="color:var(--gold2)">—</div>
+        <div class="stat-label" id="mStat-days">— days logged</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card-title" style="margin-bottom:10px;">Automated Insights</div>
+        <div id="monthlyInsights">
+          <div class="insight-card">
+            <div class="text-sm" style="color:var(--text3);">Log at least 7 days in a month to see automated insights.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Monthly Category Radar</div>
+        <div class="chart-wrap"><canvas id="monthRadar"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ HISTORY ══════════════════ -->
+  <div id="page-history" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">History</div>
+        <div class="page-sub">All logged days</div>
+      </div>
+      <button class="btn" onclick="exportData()" style="font-size:12px;">Export JSON</button>
+    </div>
+
+    <div class="card">
+      <table style="width:100%;border-collapse:collapse;" id="historyTable">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:8px 12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.1em;text-transform:uppercase;">Date</th>
+            <th style="padding:8px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--faith);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Faith</th>
+            <th style="padding:8px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--family);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Family</th>
+            <th style="padding:8px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--health);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Health</th>
+            <th style="padding:8px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--work);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Work</th>
+            <th style="padding:8px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--growth);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Growth</th>
+            <th style="padding:8px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--char);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Char</th>
+            <th style="padding:8px 12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gold2);font-weight:400;letter-spacing:0.08em;text-transform:uppercase;">Total</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+      <div id="historyEmpty" style="text-align:center;padding:40px;color:var(--text3);font-family:'DM Mono',monospace;font-size:12px;display:none;">No history yet. Start logging your days!</div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA STRUCTURE
+// ═══════════════════════════════════════════════
+
+const CATEGORIES = {
+  faith:  { label: 'Faith',         color: 'var(--faith)',  items: ['5 Daily Prayers', 'Mosque Prayer(s)', 'Quran Learning (10–20 min)', 'Dhikr / Dua'] },
+  family: { label: 'Family',        color: 'var(--family)', items: ['Meaningful Time with Wife', 'Meaningful Time with Children', 'Contacted or Helped Parents'] },
+  health: { label: 'Health',        color: 'var(--health)', items: ['Exercise / Walk', 'Healthy Eating', '7+ Hours Sleep'] },
+  work:   { label: 'Work',          color: 'var(--work)',   items: ['Improved School or Language Center', 'Helped Staff or Students', 'Completed Most Important Task'] },
+  growth: { label: 'Personal Growth', color: 'var(--growth)', items: ['IELTS Practice', 'Reading / Learning'] },
+  char:   { label: 'Character',     color: 'var(--char)',   items: ['Controlled Anger', 'Patience', 'Avoided Gossip / Negative Speech'] }
+};
+
+const STREAK_ITEMS = [
+  { id: 'prayer',   label: 'Prayer',    cat: 'faith',  idx: 0 },
+  { id: 'mosque',   label: 'Mosque',    cat: 'faith',  idx: 1 },
+  { id: 'quran',    label: 'Quran',     cat: 'faith',  idx: 2 },
+  { id: 'exercise', label: 'Exercise',  cat: 'health', idx: 0 },
+  { id: 'learning', label: 'Learning',  cat: 'growth', idx: 1 },
+];
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getStorage() {
+  try { return JSON.parse(localStorage.getItem('lifedash_v1') || '{}'); } catch { return {}; }
+}
+
+function setStorage(data) {
+  localStorage.setItem('lifedash_v1', JSON.stringify(data));
+}
+
+function getDayData(key) {
+  const s = getStorage();
+  return s[key] || { checks: {}, reflection: {} };
+}
+
+function setDayData(key, data) {
+  const s = getStorage();
+  s[key] = data;
+  setStorage(s);
+}
+
+function calcScore(checks, cat) {
+  const items = CATEGORIES[cat].items;
+  let done = 0;
+  items.forEach((_, i) => { if (checks[`${cat}_${i}`]) done++; });
+  return { done, total: items.length, pct: Math.round(done / items.length * 100) };
+}
+
+function calcDayTotal(checks) {
+  let done = 0, total = 0;
+  Object.keys(CATEGORIES).forEach(cat => {
+    const s = calcScore(checks, cat);
+    done += s.done; total += s.total;
+  });
+  return { done, total, pct: total ? Math.round(done / total * 100) : 0 };
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+
+let currentPage = 'today';
+let overviewChart, trendCharts = {}, streakChart, monthRadarChart;
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${id}'`)) b.classList.add('active');
+  });
+  currentPage = id;
+  if (id === 'overview') renderOverview();
+  if (id === 'trends') renderTrends(currentTrendRange);
+  if (id === 'streaks') renderStreaks();
+  if (id === 'monthly') renderMonthly();
+  if (id === 'history') renderHistory();
+  if (id === 'reflection') renderReflection();
+}
+
+// ═══════════════════════════════════════════════
+//  TODAY CHECKLIST
+// ═══════════════════════════════════════════════
+
+function buildChecklist() {
+  Object.keys(CATEGORIES).forEach(cat => {
+    const el = document.getElementById('checks-' + cat);
+    if (!el) return;
+    el.innerHTML = '';
+    CATEGORIES[cat].items.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'check-item';
+      div.id = `check_${cat}_${i}`;
+      div.onclick = () => toggleCheck(cat, i);
+      div.innerHTML = `
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <span class="check-text">${item}</span>
+      `;
+      el.appendChild(div);
+    });
+  });
+}
+
+function loadTodayChecks() {
+  const key = todayKey();
+  const data = getDayData(key);
+  const checks = data.checks || {};
+  Object.keys(CATEGORIES).forEach(cat => {
+    CATEGORIES[cat].items.forEach((_, i) => {
+      const el = document.getElementById(`check_${cat}_${i}`);
+      if (el) el.classList.toggle('checked', !!checks[`${cat}_${i}`]);
+    });
+  });
+  updateAllScores(checks);
+}
+
+function toggleCheck(cat, idx) {
+  const key = todayKey();
+  const data = getDayData(key);
+  if (!data.checks) data.checks = {};
+  const k = `${cat}_${idx}`;
+  data.checks[k] = !data.checks[k];
+  setDayData(key, data);
+  document.getElementById(`check_${cat}_${idx}`)?.classList.toggle('checked', data.checks[k]);
+  updateAllScores(data.checks);
+  showSave();
+}
+
+function updateAllScores(checks) {
+  Object.keys(CATEGORIES).forEach(cat => {
+    const s = calcScore(checks, cat);
+    const scoreEl = document.getElementById('score-' + cat);
+    const barEl = document.getElementById('bar-' + cat);
+    if (scoreEl) scoreEl.textContent = `${s.done} / ${s.total}`;
+    if (barEl) barEl.style.width = s.pct + '%';
+  });
+  const total = calcDayTotal(checks);
+  const numEl = document.getElementById('dailyScoreNum');
+  const detEl = document.getElementById('dailyScoreDetail');
+  const barEl = document.getElementById('bar-daily');
+  if (numEl) numEl.textContent = total.pct + '%';
+  if (detEl) detEl.textContent = `${total.done} of ${total.total} completed`;
+  if (barEl) barEl.style.width = total.pct + '%';
+
+  // Pills
+  const pillEl = document.getElementById('todayScorePills');
+  if (pillEl) {
+    pillEl.innerHTML = Object.keys(CATEGORIES).map(cat => {
+      const s = calcScore(checks, cat);
+      return `<div class="today-score-pill" style="border-color:${CATEGORIES[cat].color.replace('var(--','').replace(')','')};color:${CATEGORIES[cat].color}">${CATEGORIES[cat].label.split(' ')[0]}: ${s.pct}%</div>`;
+    }).join('');
+    // Use inline colors for pills
+    pillEl.querySelectorAll('.today-score-pill').forEach((el, i) => {
+      const cat = Object.keys(CATEGORIES)[i];
+      const s = calcScore(checks, cat);
+      const colors = { faith:'#8b7cf6', family:'#e07a5f', health:'#4caf82', work:'#5a8ae0', growth:'#f4c542', char:'#c9a84c' };
+      el.style.borderColor = colors[cat] + '60';
+      el.style.color = colors[cat];
+    });
+  }
+
+  // Weekly avg
+  const weekData = getWeekData();
+  const avgEl = document.getElementById('weeklyAvgNum');
+  if (avgEl && weekData.length) {
+    const avg = Math.round(weekData.reduce((a, b) => a + b, 0) / weekData.length);
+    avgEl.textContent = avg + '%';
+  }
+}
+
+function showSave() {
+  const el = document.getElementById('saveIndicator');
+  if (el) { el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2000); }
+}
+
+// ═══════════════════════════════════════════════
+//  REFLECTION
+// ═══════════════════════════════════════════════
+
+function loadReflection() {
+  const key = todayKey();
+  const data = getDayData(key);
+  const r = data.reflection || {};
+  document.getElementById('refl-win').value = r.win || '';
+  document.getElementById('refl-mistake').value = r.mistake || '';
+  document.getElementById('refl-tomorrow').value = r.tomorrow || '';
+}
+
+function saveReflection(explicit) {
+  const key = todayKey();
+  const data = getDayData(key);
+  data.reflection = {
+    win: document.getElementById('refl-win').value,
+    mistake: document.getElementById('refl-mistake').value,
+    tomorrow: document.getElementById('refl-tomorrow').value
+  };
+  setDayData(key, data);
+  const el = document.getElementById('reflSaveIndicator');
+  if (el) { el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2000); }
+}
+
+function renderReflection() {
+  const d = new Date();
+  document.getElementById('reflectionDate').textContent = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  loadReflection();
+
+  // Recent reflections
+  const all = getAllDaysSorted();
+  const recEl = document.getElementById('recentReflections');
+  const recent = all.filter(k => {
+    const d = getDayData(k);
+    return d.reflection && (d.reflection.win || d.reflection.mistake || d.reflection.tomorrow);
+  }).slice(0, 5);
+
+  if (recent.length === 0) {
+    recEl.innerHTML = '<div style="color:var(--text3);font-family:\'DM Mono\',monospace;font-size:12px;">No reflections saved yet.</div>';
+  } else {
+    recEl.innerHTML = recent.map(k => {
+      const data = getDayData(k);
+      const r = data.reflection;
+      const date = new Date(k + 'T00:00:00');
+      return `
+        <div style="border-bottom:1px solid var(--border);padding:10px 0;">
+          <div class="text-xs" style="margin-bottom:6px;">${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+          ${r.win ? `<div class="text-sm" style="color:var(--green);margin-bottom:2px;">✓ ${r.win}</div>` : ''}
+          ${r.mistake ? `<div class="text-sm" style="color:var(--text2);margin-bottom:2px;">◦ ${r.mistake}</div>` : ''}
+          ${r.tomorrow ? `<div class="text-sm" style="color:var(--gold);margin-bottom:2px;">→ ${r.tomorrow}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Breakdown
+  const key = todayKey();
+  const data = getDayData(key);
+  const checks = data.checks || {};
+  const bEl = document.getElementById('reflBreakdown');
+  if (bEl) {
+    bEl.innerHTML = Object.keys(CATEGORIES).map(cat => {
+      const s = calcScore(checks, cat);
+      return `
+        <div class="mini-ring">
+          <div class="mini-ring-label">${CATEGORIES[cat].label}</div>
+          <div class="mini-bar"><div class="mini-bar-fill" style="background:${getCatColor(cat)};width:${s.pct}%"></div></div>
+          <div class="mini-pct">${s.pct}%</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  DATA HELPERS
+// ═══════════════════════════════════════════════
+
+function getAllDaysSorted() {
+  const s = getStorage();
+  return Object.keys(s).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse();
+}
+
+function getWeekData() {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = fmtKey(d);
+    const data = getDayData(key);
+    if (data.checks && Object.keys(data.checks).length > 0) {
+      days.push(calcDayTotal(data.checks || {}).pct);
+    }
+  }
+  return days;
+}
+
+function getDaysRange(n) {
+  const result = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    result.push(fmtKey(d));
+  }
+  return result;
+}
+
+function fmtKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function fmtShort(key) {
+  const d = new Date(key + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function getCatColor(cat) {
+  const map = { faith:'#8b7cf6', family:'#e07a5f', health:'#4caf82', work:'#5a8ae0', growth:'#f4c542', char:'#c9a84c' };
+  return map[cat] || '#aaa';
+}
+
+// ═══════════════════════════════════════════════
+//  OVERVIEW
+// ═══════════════════════════════════════════════
+
+function renderOverview() {
+  const allDays = getAllDaysSorted();
+  const today = todayKey();
+
+  // LQI: last 30 days
+  const last30 = getDaysRange(30);
+  let lqiTotal = 0, lqiCount = 0;
+  last30.forEach(k => {
+    const data = getDayData(k);
+    if (data.checks && Object.keys(data.checks).length > 0) {
+      lqiTotal += calcDayTotal(data.checks).pct;
+      lqiCount++;
+    }
+  });
+  const lqi = lqiCount ? Math.round(lqiTotal / lqiCount) : null;
+
+  // Prev month LQI
+  const prev30 = [];
+  for (let i = 59; i >= 30; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    prev30.push(fmtKey(d));
+  }
+  let prevTotal = 0, prevCount = 0;
+  prev30.forEach(k => {
+    const data = getDayData(k);
+    if (data.checks && Object.keys(data.checks).length > 0) {
+      prevTotal += calcDayTotal(data.checks).pct;
+      prevCount++;
+    }
+  });
+  const prevLqi = prevCount ? Math.round(prevTotal / prevCount) : null;
+
+  // Render LQI ring
+  const lqiNum = document.getElementById('lqiNum');
+  const lqiRing = document.getElementById('lqiRing');
+  const lqiChange = document.getElementById('lqiChange');
+  const lqiStatus = document.getElementById('lqiStatus');
+
+  if (lqi !== null) {
+    lqiNum.textContent = lqi;
+    const c = 2 * Math.PI * 52;
+    lqiRing.setAttribute('stroke-dashoffset', c - (lqi / 100 * c));
+    lqiRing.style.stroke = lqi >= 70 ? '#4caf82' : lqi >= 40 ? '#c9a84c' : '#e05a5a';
+    if (prevLqi !== null) {
+      const diff = lqi - prevLqi;
+      const sign = diff > 2 ? '↑' : diff < -2 ? '↓' : '→';
+      const cls = diff > 2 ? 'up' : diff < -2 ? 'down' : 'stable';
+      lqiChange.innerHTML = `<span class="${cls}">${sign} ${Math.abs(diff)}% vs prev 30d</span>`;
+    }
+    lqiStatus.textContent = `Based on ${lqiCount} days logged`;
+  } else {
+    lqiNum.textContent = '—';
+    lqiChange.innerHTML = '<span class="stable">→ Not enough data</span>';
+  }
+
+  // This month
+  const now = new Date();
+  const monthDays = [];
+  for (let d = 1; d <= now.getDate(); d++) {
+    const k = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    monthDays.push(k);
+  }
+  let mTotal = 0, mCount = 0;
+  monthDays.forEach(k => {
+    const data = getDayData(k);
+    if (data.checks && Object.keys(data.checks).length > 0) { mTotal += calcDayTotal(data.checks).pct; mCount++; }
+  });
+  const mAvg = mCount ? Math.round(mTotal / mCount) : null;
+  document.getElementById('monthAvg').textContent = mAvg !== null ? mAvg + '%' : '—';
+
+  // This week
+  const weekDays = getDaysRange(7);
+  let wTotal = 0, wCount = 0;
+  weekDays.forEach(k => {
+    const data = getDayData(k);
+    if (data.checks && Object.keys(data.checks).length > 0) { wTotal += calcDayTotal(data.checks).pct; wCount++; }
+  });
+  const wAvg = wCount ? Math.round(wTotal / wCount) : null;
+  document.getElementById('weekAvg').textContent = wAvg !== null ? wAvg + '%' : '—';
+
+  // Days tracked
+  document.getElementById('daysTracked').textContent = allDays.filter(k => {
+    const d = getDayData(k); return d.checks && Object.keys(d.checks).length > 0;
+  }).length;
+
+  // Category breakdown
+  const bEl = document.getElementById('catBreakdown');
+  if (bEl) {
+    const catAvgs = {};
+    Object.keys(CATEGORIES).forEach(cat => {
+      let t = 0, c = 0;
+      monthDays.forEach(k => {
+        const data = getDayData(k);
+        if (data.checks && Object.keys(data.checks).length > 0) {
+          t += calcScore(data.checks, cat).pct; c++;
+        }
+      });
+      catAvgs[cat] = c ? Math.round(t / c) : null;
+    });
+    bEl.innerHTML = Object.keys(CATEGORIES).map(cat => `
+      <div class="mini-ring">
+        <div class="mini-ring-label">${CATEGORIES[cat].label}</div>
+        <div class="mini-bar"><div class="mini-bar-fill" style="background:${getCatColor(cat)};width:${catAvgs[cat] || 0}%"></div></div>
+        <div class="mini-pct">${catAvgs[cat] !== null ? catAvgs[cat] + '%' : '—'}</div>
+      </div>
+    `).join('');
+  }
+
+  // 30-day chart
+  const labels = [], vals = [];
+  getDaysRange(30).forEach(k => {
+    const data = getDayData(k);
+    labels.push(fmtShort(k));
+    vals.push(data.checks && Object.keys(data.checks).length > 0 ? calcDayTotal(data.checks).pct : null);
+  });
+
+  if (overviewChart) overviewChart.destroy();
+  overviewChart = new Chart(document.getElementById('overviewChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        borderColor: '#c9a84c',
+        backgroundColor: 'rgba(201,168,76,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 2,
+        pointBackgroundColor: '#c9a84c',
+        spanGaps: true
+      }]
+    },
+    options: chartOpts(0, 100, '%')
+  });
+
+  renderHeatmap();
+}
+
+function renderHeatmap() {
+  const el = document.getElementById('heatmapContainer');
+  if (!el) return;
+  const weeks = 12;
+  const days = 7;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Build grid: 12 cols (weeks) × 7 rows (days)
+  const grid = [];
+  // Find start: go back (weeks*7 - 1) days
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - (weeks * days - 1));
+  // Align to Sunday
+  const startDow = startDate.getDay();
+  startDate.setDate(startDate.getDate() - startDow);
+
+  const cells = [];
+  for (let w = 0; w < weeks + 1; w++) {
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(startDate);
+      dt.setDate(dt.getDate() + w * 7 + d);
+      const key = fmtKey(dt);
+      const data = getDayData(key);
+      let pct = 0;
+      if (data.checks && Object.keys(data.checks).length > 0) pct = calcDayTotal(data.checks).pct;
+      cells.push({ key, pct, date: dt, d });
+    }
+  }
+
+  // Render as rows by day
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = '<div class="day-labels">';
+  // Week numbers above
+  html += '</div>';
+
+  for (let d = 0; d < 7; d++) {
+    html += `<div class="heatmap-row"><div class="heatmap-label">${dayNames[d]}</div>`;
+    for (let w = 0; w <= weeks; w++) {
+      const cell = cells[w * 7 + d];
+      if (!cell) continue;
+      const future = cell.date > today;
+      let bg = '#1f1f25';
+      if (!future && cell.pct > 0) {
+        const a = cell.pct / 100;
+        bg = `rgba(201,168,76,${0.1 + a * 0.75})`;
+      }
+      html += `<div class="heatmap-cell" style="background:${bg};" title="${cell.key}: ${cell.pct}%"></div>`;
+    }
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  TRENDS
+// ═══════════════════════════════════════════════
+
+let currentTrendRange = 30;
+
+function setTrendRange(n, btn) {
+  currentTrendRange = n;
+  document.querySelectorAll('.time-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTrends(n);
+}
+
+function renderTrends(n) {
+  const all = getAllDaysSorted();
+  let keys;
+  if (n === 9999) {
+    keys = all.slice().reverse();
+    if (keys.length === 0) keys = getDaysRange(7);
+  } else {
+    keys = getDaysRange(n);
+  }
+
+  const labels = keys.map(k => fmtShort(k));
+
+  const cats = Object.keys(CATEGORIES);
+  const catColors = { faith:'#8b7cf6', family:'#e07a5f', health:'#4caf82', work:'#5a8ae0', growth:'#f4c542', char:'#c9a84c' };
+
+  function getVals(cat) {
+    return keys.map(k => {
+      const data = getDayData(k);
+      if (!data.checks || Object.keys(data.checks).length === 0) return null;
+      return calcScore(data.checks, cat).pct;
+    });
+  }
+
+  function getOverall() {
+    return keys.map(k => {
+      const data = getDayData(k);
+      if (!data.checks || Object.keys(data.checks).length === 0) return null;
+      return calcDayTotal(data.checks).pct;
+    });
+  }
+
+  function makeChart(id, data, color, existingKey) {
+    if (trendCharts[existingKey]) trendCharts[existingKey].destroy();
+    trendCharts[existingKey] = new Chart(document.getElementById(id), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: color,
+          backgroundColor: color + '18',
+          fill: true,
+          tension: 0.4,
+          pointRadius: labels.length > 30 ? 0 : 2,
+          pointBackgroundColor: color,
+          spanGaps: true
+        }]
+      },
+      options: chartOpts(0, 100, '%')
+    });
+  }
+
+  makeChart('trendOverall', getOverall(), '#c9a84c', 'overall');
+  makeChart('trendFaith',   getVals('faith'),  catColors.faith,  'faith');
+  makeChart('trendFamily',  getVals('family'), catColors.family, 'family');
+  makeChart('trendHealth',  getVals('health'), catColors.health, 'health');
+  makeChart('trendWork',    getVals('work'),   catColors.work,   'work');
+  makeChart('trendGrowth',  getVals('growth'), catColors.growth, 'growth');
+  makeChart('trendChar',    getVals('char'),   catColors.char,   'char');
+}
+
+// ═══════════════════════════════════════════════
+//  STREAKS
+// ═══════════════════════════════════════════════
+
+function calcStreak(cat, idx) {
+  let current = 0, best = 0, temp = 0;
+  const allDays = [];
+  for (let i = 0; i < 730; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    allDays.push(fmtKey(d));
+  }
+  // current streak (consecutive from today backward)
+  let i = 0;
+  while (i < allDays.length) {
+    const data = getDayData(allDays[i]);
+    const checked = data.checks && data.checks[`${cat}_${idx}`];
+    if (checked) { current++; i++; } else break;
+  }
+  // best streak
+  temp = 0;
+  for (let j = allDays.length - 1; j >= 0; j--) {
+    const data = getDayData(allDays[j]);
+    if (data.checks && data.checks[`${cat}_${idx}`]) {
+      temp++;
+      if (temp > best) best = temp;
+    } else {
+      temp = 0;
+    }
+  }
+  return { current, best };
+}
+
+function renderStreaks() {
+  const el = document.getElementById('streakGrid');
+  const detEl = document.getElementById('streakDetails');
+  if (!el) return;
+
+  el.innerHTML = '';
+  let detHtml = '';
+  STREAK_ITEMS.forEach(s => {
+    const { current, best } = calcStreak(s.cat, s.idx);
+    const color = getCatColor(s.cat);
+    el.innerHTML += `
+      <div class="streak-card">
+        <div class="streak-name">${s.label}</div>
+        <div class="streak-current" style="color:${color}">${current}</div>
+        <div class="streak-unit">day streak</div>
+        <div class="streak-best">Best: ${best} days</div>
+      </div>
+    `;
+    detHtml += `
+      <div class="mini-ring">
+        <div class="mini-ring-label">${s.label}</div>
+        <div style="flex:1;font-family:'DM Mono',monospace;font-size:12px;color:${color};">${current} day${current !== 1 ? 's' : ''}</div>
+        <div class="mini-pct" style="width:60px;">Best: ${best}</div>
+      </div>
+    `;
+  });
+  if (detEl) detEl.innerHTML = detHtml;
+
+  // Streak chart — last 30 days consistency
+  const keys = getDaysRange(30);
+  const labels = keys.map(k => fmtShort(k));
+  const datasets = STREAK_ITEMS.map(s => ({
+    label: s.label,
+    data: keys.map(k => {
+      const data = getDayData(k);
+      return (data.checks && data.checks[`${s.cat}_${s.idx}`]) ? 1 : 0;
+    }),
+    borderColor: getCatColor(s.cat),
+    backgroundColor: getCatColor(s.cat) + '30',
+    fill: false,
+    tension: 0,
+    pointRadius: 3,
+    stepped: true
+  }));
+
+  if (trendCharts.streak) trendCharts.streak.destroy();
+  trendCharts.streak = new Chart(document.getElementById('streakChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#9898a8', font: { family: 'DM Mono', size: 10 }, boxWidth: 10, padding: 10 } } },
+      scales: {
+        x: { ticks: { color: '#5a5a6a', font: { family: 'DM Mono', size: 9 }, maxTicksLimit: 8 }, grid: { color: '#2a2a32' } },
+        y: { min: 0, max: 1, ticks: { display: false }, grid: { color: '#2a2a32' } }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  MONTHLY REVIEW
+// ═══════════════════════════════════════════════
+
+let reviewDate = new Date();
+
+function changeReviewMonth(dir) {
+  reviewDate.setMonth(reviewDate.getMonth() + dir);
+  renderMonthly();
+}
+
+function renderMonthly() {
+  const y = reviewDate.getFullYear(), m = reviewDate.getMonth();
+  const monthName = reviewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('monthlyReviewPeriod').textContent = monthName;
+
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const monthDays = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    monthDays.push(`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+  }
+
+  const catAvgs = {};
+  const catCounts = {};
+  let totalPct = 0, totalCount = 0;
+
+  Object.keys(CATEGORIES).forEach(cat => {
+    let t = 0, c = 0;
+    monthDays.forEach(k => {
+      const data = getDayData(k);
+      if (data.checks && Object.keys(data.checks).length > 0) {
+        t += calcScore(data.checks, cat).pct; c++;
+      }
+    });
+    catAvgs[cat] = c ? Math.round(t / c) : null;
+    catCounts[cat] = c;
+    if (catAvgs[cat] !== null) { totalPct += catAvgs[cat]; totalCount++; }
+  });
+
+  Object.keys(CATEGORIES).forEach(cat => {
+    const el = document.getElementById('mStat-' + cat);
+    if (el) el.textContent = catAvgs[cat] !== null ? catAvgs[cat] + '%' : '—';
+  });
+
+  const overall = totalCount ? Math.round(totalPct / totalCount) : null;
+  document.getElementById('mStat-overall').textContent = overall !== null ? overall + '%' : '—';
+
+  let loggedCount = 0;
+  monthDays.forEach(k => {
+    const data = getDayData(k);
+    if (data.checks && Object.keys(data.checks).length > 0) loggedCount++;
+  });
+  document.getElementById('mStat-days').textContent = `${loggedCount} days logged`;
+
+  // Insights
+  const insEl = document.getElementById('monthlyInsights');
+  if (loggedCount < 7) {
+    insEl.innerHTML = '<div class="insight-card"><div class="text-sm" style="color:var(--text3);">Log at least 7 days in a month to see automated insights.</div></div>';
+  } else {
+    const sorted = Object.keys(catAvgs).filter(c => catAvgs[c] !== null).sort((a, b) => catAvgs[b] - catAvgs[a]);
+    const best = sorted[0], worst = sorted[sorted.length - 1];
+
+    // Compare with previous month
+    const prevY = m === 0 ? y - 1 : y;
+    const prevM = m === 0 ? 11 : m - 1;
+    const prevDays = new Date(prevY, prevM + 1, 0).getDate();
+    const prevMonthDays = [];
+    for (let d = 1; d <= prevDays; d++) {
+      prevMonthDays.push(`${prevY}-${String(prevM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+    }
+    const prevCatAvgs = {};
+    Object.keys(CATEGORIES).forEach(cat => {
+      let t = 0, c = 0;
+      prevMonthDays.forEach(k => {
+        const data = getDayData(k);
+        if (data.checks && Object.keys(data.checks).length > 0) { t += calcScore(data.checks, cat).pct; c++; }
+      });
+      prevCatAvgs[cat] = c ? Math.round(t / c) : null;
+    });
+
+    const diffs = Object.keys(catAvgs).filter(c => catAvgs[c] !== null && prevCatAvgs[c] !== null)
+      .map(c => ({ cat: c, diff: catAvgs[c] - prevCatAvgs[c] }))
+      .sort((a, b) => b.diff - a.diff);
+
+    const mostImproved = diffs.length ? diffs[0] : null;
+    const mostNeglected = diffs.length ? diffs[diffs.length - 1] : null;
+
+    let html = '';
+    if (best) html += `<div class="insight-card"><span class="insight-tag tag-best">Best Area</span><div class="insight-text">${CATEGORIES[best].label} is your strongest area this month at ${catAvgs[best]}%.</div></div>`;
+    if (worst) html += `<div class="insight-card"><span class="insight-tag tag-weak">Weakest Area</span><div class="insight-text">${CATEGORIES[worst].label} needs attention — scored ${catAvgs[worst]}% this month.</div></div>`;
+    if (mostImproved && mostImproved.diff > 0) html += `<div class="insight-card"><span class="insight-tag tag-improve">Most Improved</span><div class="insight-text">${CATEGORIES[mostImproved.cat].label} score increased by ${mostImproved.diff}% compared to last month.</div></div>`;
+    if (mostNeglected && mostNeglected.diff < 0) html += `<div class="insight-card"><span class="insight-tag tag-neglect">Most Neglected</span><div class="insight-text">${CATEGORIES[mostNeglected.cat].label} score declined by ${Math.abs(mostNeglected.diff)}% compared to last month.</div></div>`;
+    if (!html) html = '<div class="insight-card"><div class="text-sm" style="color:var(--text3);">Keep tracking to unlock comparative insights.</div></div>';
+    insEl.innerHTML = html;
+  }
+
+  // Radar chart
+  const radarVals = Object.keys(CATEGORIES).map(c => catAvgs[c] || 0);
+  const radarLabels = Object.values(CATEGORIES).map(c => c.label);
+
+  if (monthRadarChart) monthRadarChart.destroy();
+  monthRadarChart = new Chart(document.getElementById('monthRadar'), {
+    type: 'radar',
+    data: {
+      labels: radarLabels,
+      datasets: [{
+        data: radarVals,
+        borderColor: '#c9a84c',
+        backgroundColor: 'rgba(201,168,76,0.15)',
+        pointBackgroundColor: '#c9a84c',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { display: false },
+          grid: { color: '#2a2a32' },
+          pointLabels: { color: '#9898a8', font: { family: 'Instrument Sans', size: 11 } },
+          angleLines: { color: '#2a2a32' }
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  HISTORY TABLE
+// ═══════════════════════════════════════════════
+
+function renderHistory() {
+  const all = getAllDaysSorted();
+  const tbody = document.getElementById('historyBody');
+  const empty = document.getElementById('historyEmpty');
+  const logged = all.filter(k => {
+    const d = getDayData(k); return d.checks && Object.keys(d.checks).length > 0;
+  });
+
+  if (logged.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = logged.map(k => {
+    const data = getDayData(k);
+    const checks = data.checks || {};
+    const total = calcDayTotal(checks);
+    const date = new Date(k + 'T00:00:00');
+    return `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:9px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);">
+          ${date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
+        </td>
+        ${Object.keys(CATEGORIES).map(cat => {
+          const s = calcScore(checks, cat);
+          return `<td style="padding:9px 8px;font-family:'DM Mono',monospace;font-size:11px;color:${getCatColor(cat)};text-align:center;">${s.pct}%</td>`;
+        }).join('')}
+        <td style="padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;color:var(--gold2);text-align:center;font-weight:500;">${total.pct}%</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════
+
+function exportData() {
+  const data = getStorage();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `life-dashboard-${todayKey()}.json`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+//  CHART DEFAULTS
+// ═══════════════════════════════════════════════
+
+function chartOpts(min, max, unit) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        ticks: { color: '#5a5a6a', font: { family: 'DM Mono', size: 9 }, maxTicksLimit: 8, maxRotation: 0 },
+        grid: { color: '#2a2a32' }
+      },
+      y: {
+        min, max,
+        ticks: { color: '#5a5a6a', font: { family: 'DM Mono', size: 9 }, callback: v => v + unit },
+        grid: { color: '#2a2a32' }
+      }
+    },
+    elements: { line: { borderWidth: 1.5 } },
+    interaction: { intersect: false, mode: 'index' }
+  };
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+
+function init() {
+  // Set date labels
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('todayDateLabel').textContent = dateStr;
+  document.getElementById('sidebarDate').textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('monthlyReviewPeriod').textContent = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  buildChecklist();
+  loadTodayChecks();
+}
+
+init();
+</script>
+</body>
+</html>
